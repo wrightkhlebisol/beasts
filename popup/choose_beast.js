@@ -16,13 +16,13 @@ function listenForClicks() {
          * Given the name of a beast, get the URL to the corresponding image.
          */
          function beastNameToURL(beastName) {
-            switch (beastname) {
+            switch (beastName) {
                 case "Frog":
-                    return browser.runtime.getURL("beasts/frog.jpg");
+                    return chrome.runtime.getURL("beasts/frog.jpg");
                 case "Snake":
-                    return browser.runtime.getURL("beasts/snake.jpg");
+                    return chrome.runtime.getURL("beasts/snake.jpg");
                 case "Turtle":
-                    return browser.runtime.getURL("beasts/turtle.jpg");
+                    return chrome.runtime.getURL("beasts/turtle.jpg");
             }
          }
 
@@ -32,9 +32,12 @@ function listenForClicks() {
          * to the content script in the active tab.
          */
         function beastify(tabs) {
-            browser.tabs.insertCSS({ code: hidePage}).then(() => {
+            chrome.scripting.insertCSS({ 
+                css: hidePage,
+                target: { tabId: tabs[0].id }
+            }).then(() => {
                 const url = beastNameToURL(e.target.textContent);
-                browser.tabs.sendMessage(tabs[0].id, {
+                chrome.tabs.sendMessage(tabs[0].id, {
                     command: "beastify",
                     beastURL: url,
                 });
@@ -46,8 +49,11 @@ function listenForClicks() {
         * send a "reset" message to the content script in the active tab.
         */
         function reset(tabs) {
-            browser.tabs.removeCSS({ code: hidePage }).then(() => {
-                browser.tabs.sendMessage(tabs[0].id, {
+            chrome.scripting.removeCSS({ 
+                css: hidePage,
+                target: { tabId: tabs[0].id }
+            }).then(() => {
+                chrome.tabs.sendMessage(tabs[0].id, {
                     command: "reset",
                 });
             });
@@ -68,13 +74,13 @@ function listenForClicks() {
             // Ignore when click is not on a button within <div id="popup-content">.
             return;
         }
-        if (e.target.type === "reset") {
-            browser.tabs
+        if (e.target.textContent === "reset") {
+            chrome.tabs
                 .query({ active: true, currentWindow: true })
                 .then(reset)
                 .catch(reportError);
         } else {
-            browser.tabs
+            chrome.tabs
                 .query({ active: true, currentWindow: true })
                 .then(beastify)
                 .catch(reportError)
@@ -97,7 +103,12 @@ function reportExecuteScriptError(error) {
  * and add a click handler.
  * If we couldn't inject the script, handle the error.
  */
-browser.tabs
-    .executeScript({ file: "/content_scripts/beastify.js" })
-    .then(listenForClicks)
-    .catch(reportExecuteScriptError);
+chrome.tabs.query({active: true, currentWindow: true}, (tabs) => {
+    chrome.scripting
+        .executeScript({
+            target: { tabId: tabs[0].id },
+            files: ["/content_scripts/beastify.js"] 
+        })
+        .then(listenForClicks)
+        .catch(reportExecuteScriptError);
+})
