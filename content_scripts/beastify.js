@@ -22,7 +22,7 @@
         beastImage.setAttribute("src", beastURL);
         beastImage.style.height = "100vh";
         beastImage.className = "beastify-image";
-        document.body.appendChild(bestImage);
+        document.body.appendChild(beastImage);
     }
 
     /**
@@ -39,7 +39,7 @@
      * Listen for messages from the background script.
      * Call "insertBeast()" or "removeExistingBeasts()"
      */
-    browser.runtime.onMessage.addListener((message) => {
+    chrome.runtime.onMessage.addListener((message) => {
         if (message.command == "beastify") {
             insertBeast(message.beastURL);
         } else if (message.command === "reset") {
